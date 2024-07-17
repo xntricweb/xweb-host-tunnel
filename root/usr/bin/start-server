@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [ -d /root/.ssh/authorized_keys ]; then
+    echo "Server unconnectable, stopping!"
+    exit 1
+fi
+
+echo "Starting server... $@"
+
+SSH_PARAMS="-D -e -p ${SSH_PORT:-22} $SSH_PARAMS"
+echo "Running: /usr/sbin/sshd $SSH_PARAMS"
+exec /usr/sbin/sshd -D $SSH_PARAMS

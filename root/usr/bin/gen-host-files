@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+SECRET_STORE=${1:-'./secrets'}
+HOST_IP=${2:-'SERVER_IP'}
+
+# ssh-keygen -A 
+
+rm -r /tmp/host-files 2> /dev/null
+mkdir -p /tmp/host-files
+
+echo "copying keys"
+cp /etc/ssh/ssh_host_*_key* /tmp/host-files
+cp /root/.ssh/id_* /tmp/host-files
+
+keys=$(ls /tmp/host-files)
+
+echo "Generating compose file"
+echo "
+services:
+    tunnel:
+        image: xweb-host-tunnel
+        environment:
+            - \"HOST_KEY_FILE_GLOB=/run/secrets/ssh_host_*_key*\"
+            - \"ID_FILE_GLOB=/run/secrets/id_*\"
+            
+        secrets: $(for key in $keys; do echo -n "
+            - $key";done;)
+            - known_hosts 
+            - authorized_keys 
+
+secrets: $(for key in $keys; do echo -n "
+    $key:
+        file: $SECRET_STORE/$key";done;)
+    known_hosts:
+        file: $SECRET_STORE/known_hosts
+    authorized_keys:
+        file: $SECRET_STORE/authorized_keys
+" > /tmp/host-files/compose.yaml
+
+if [ "$HOST_IP" = "SERVER_IP" ]; then
+    local_ip=$(hostname -i)
+    local_ip=${local_ip% *}
+    HOST_IP="$local_ip"
+fi
+
+
+echo "Generating known_hosts"
+for key in /etc/ssh/ssh_host_*_key.pub; do
+    echo "$HOST_IP $(cat $key)" >> /tmp/host-files/known_hosts
+done
+
+echo "Generating authorized_keys"
+for key in '/root/.ssh/id_*.pub'; do
+  echo "$(cat $key)" >> /tmp/host-files/authorized_keys
+done

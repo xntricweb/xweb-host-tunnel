@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+init-host-keys
+
+if [ "$1" = "server" ]; then
+    exec start-server $@
+    exit $?
+    
+fi
+
+echo "Executing command: $@" 
+exec $@
+exit $?

@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+
+mkdir -p /etc/ssh 2> /dev/null
+mkdir -p /root/.ssh 2> /dev/null
+
+authkeys=$([ -z "$AUTHHORIZED_KEYS" ] && cat ${AUTHORIZED_KEYS_FILE:-/run/secrets/authorized_keys} 2> /dev/null || echo "$AUTHHORIZED_KEYS")
+if ! [ -z "$authkeys" ]; then
+    echo "Generating authorization_key file"
+    echo "$authkeys" > /root/.ssh/authorized_keys 
+fi
+
+knownhosts=$([ -z "$KNOWN_HOSTS" ] && cat ${KNOWN_HOSTS_FILE:-/run/secrets/known_hosts} 2> /dev/null || echo "$KNOWN_HOSTS")
+if ! [ -z "$knownhosts" ]; then
+    echo "Generating known_hosts file"
+    echo "$knownhosts" > /root/.ssh/known_hosts
+fi
+
+hostkeyglob="${HOST_KEY_FILE_GLOB:-/run/secrets/ssh_host_*_key*}"
+hostkeyfiles=$(ls $hostkeyglob) 2> /dev/null
+if ! [ -z "$hostkeyfiles" ]; then
+    echo "copying host keys from: $hostkeyglob"
+    cp $hostkeyfiles /etc/ssh
+    echo "updating permission on key: /etc/ssh/$(basename "$hostkeyglob")" 
+    chmod 0600 /etc/ssh/$(basename "$hostkeyglob")
+else
+    echo "Generating new host keys"
+    ssh-keygen -A 
+    # echo "Warning no host keys ssh server will not start"
+fi
+
+authkeyglob="${ID_FILE_GLOB:-/run/secrets/id_*}"
+authkeyfiles=$(ls $authkeyglob) 2> /dev/null
+if ! [ -z "$authkeyfiles" ]; then
+    echo "copying ids from: $authkeyglob"
+    cp $authkeyfiles /root/.ssh
+    echo "updating permission on key: /root/.ssh/$(basename "$authkeyglob")" 
+    chmod 0600 /root/.ssh/$(basename "$authkeyglob")
+else
+    # echo "Warning No authorized keys server will be unconnectable"
+    echo "Generating ssh id"
+    ssh-keygen -q -N "" -f /root/.ssh/id_rsa
+fi

@@ -1,0 +1,42 @@
+
+services:
+    tunnel:
+        image: xweb-host-tunnel
+        environment:
+            - "HOST_KEY_FILE_GLOB=/run/secrets/ssh_host_*_key*"
+            - "ID_FILE_GLOB=/run/secrets/id_*"
+            
+        secrets: 
+            - id_rsa
+            - id_rsa.pub
+            - ssh_host_ecdsa_key
+            - ssh_host_ecdsa_key.pub
+            - ssh_host_ed25519_key
+            - ssh_host_ed25519_key.pub
+            - ssh_host_rsa_key
+            - ssh_host_rsa_key.pub
+            - known_hosts 
+            - authorized_keys 
+
+secrets: 
+    id_rsa:
+        file: ./secrets/id_rsa
+    id_rsa.pub:
+        file: ./secrets/id_rsa.pub
+    ssh_host_ecdsa_key:
+        file: ./secrets/ssh_host_ecdsa_key
+    ssh_host_ecdsa_key.pub:
+        file: ./secrets/ssh_host_ecdsa_key.pub
+    ssh_host_ed25519_key:
+        file: ./secrets/ssh_host_ed25519_key
+    ssh_host_ed25519_key.pub:
+        file: ./secrets/ssh_host_ed25519_key.pub
+    ssh_host_rsa_key:
+        file: ./secrets/ssh_host_rsa_key
+    ssh_host_rsa_key.pub:
+        file: ./secrets/ssh_host_rsa_key.pub
+    known_hosts:
+        file: ./secrets/known_hosts
+    authorized_keys:
+        file: ./secrets/authorized_keys
+
