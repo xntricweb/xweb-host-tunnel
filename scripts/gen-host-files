@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+dest="${1:-secrets/}"
+ip="${2:-SERVER_IP}"
+
+
+root="$(dirname "$0")/.."
+
+echo "Determining relative path to destination: $dest"
+destrel="$(realpath -s --relative-to "$root" "$dest")"
+cd "$root"
+
+echo "Putting keys here: $destrel"
+# echo "Building base image"
+echo "Creating container (docker create xweb-host-tunnel gen-host-files "$destrel" "$ip")"
+id=$(docker create xweb-host-tunnel gen-host-files "$destrel" "$ip")
+if ! [ "$?" = "0" ]; then
+  echo "Failed creating container."
+  exit 1
+fi 
+
+echo "Generating keys"
+docker start -ai "$id"
+mkdir -p "$(dirname "$dest")"
+docker cp "${id}:/tmp/host-files/." "$dest" > /dev/null
+
+echo "Removing container"
+docker rm "$id" > /dev/null
